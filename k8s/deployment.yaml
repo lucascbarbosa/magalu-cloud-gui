@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mgc-gui
+  namespace: default
+  labels:
+    app: mgc-gui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mgc-gui
+  template:
+    metadata:
+      labels:
+        app: mgc-gui
+    spec:
+      containers:
+      - name: mgc-gui
+        image: container-registry.br-se1.magalu.cloud/seu-usuario/mgc-gui:latest
+        ports:
+        - containerPort: 3000
+          name: http
+        env:
+        # Injeção segura de credenciais via Secrets do K8s
+        - name: MGC_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: mgc-credentials
+              key: api-key
+        - name: MGC_TENANT_ID
+          valueFrom:
+            secretKeyRef:
+              name: mgc-credentials
+              key: tenant-id
+        - name: NEXT_PUBLIC_MGC_REGION
+          value: "br-se1"
+        - name: NODE_ENV
+          value: "production"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mgc-gui
+  namespace: default
+spec:
+  selector:
+    app: mgc-gui
+  ports:
+  - port: 80
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mgc-credentials
+  namespace: default
+type: Opaque
+stringData:
+  api-key: "sua-api-key-aqui"
+  tenant-id: "seu-tenant-id-aqui"
+

@@ -17,9 +17,21 @@ async function AuthInfo() {
 
   try {
     tenant = await AuthService.getCurrentTenant();
-    isValid = true;
+    // Se retornou null, significa que o endpoint não existe (404 esperado)
+    if (!tenant) {
+      isValid = false;
+      error = 'Endpoint de tenant não disponível (usando informações locais)';
+      tenant = {
+        id: process.env.MGC_TENANT_ID || 'N/A',
+        uuid: process.env.MGC_TENANT_ID || 'N/A',
+        name: 'Current Tenant',
+      };
+    } else {
+      isValid = true;
+    }
   } catch (err: any) {
     error = err.message || 'Erro ao validar credenciais';
+    isValid = false;
     // Fallback para informações do .env
     tenant = {
       id: process.env.MGC_TENANT_ID || 'N/A',

@@ -61,17 +61,23 @@ async function ClusterList() {
         </TableHeader>
         <TableBody>
           {clusters.map((cluster) => (
-            <TableRow key={cluster.id}>
-              <TableCell className="font-semibold">{cluster.name}</TableCell>
+            <TableRow key={cluster.id} className="cursor-pointer hover:bg-accent/50">
+              <TableCell className="font-semibold">
+                <Link href={`/kubernetes/${cluster.id}`} className="hover:underline">
+                  {cluster.name}
+                </Link>
+              </TableCell>
               <TableCell>
                 <ClusterStatus state={cluster.status.state} />
               </TableCell>
               <TableCell>{cluster.version}</TableCell>
               <TableCell>
-                {cluster.node_pools.reduce((acc, pool) => acc + pool.replicas, 0)}
+                {cluster.node_pools?.reduce((acc, pool) => acc + (pool.replicas || 0), 0) || 0}
               </TableCell>
               <TableCell>
-                {new Date(cluster.created_at).toLocaleDateString('pt-BR')}
+                {cluster.created_at
+                  ? new Date(cluster.created_at).toLocaleDateString('pt-BR')
+                  : 'N/A'}
               </TableCell>
               <TableCell className="text-right">
                 <div className="flex justify-end gap-2">

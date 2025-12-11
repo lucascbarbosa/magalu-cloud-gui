@@ -29,10 +29,10 @@ async function DashboardStats() {
   }
 
   try {
-    const repositories = await RegistryService.listRepositories();
-    repositoriesCount = repositories.length;
+    const registries = await RegistryService.listRegistries();
+    repositoriesCount = registries.length;
   } catch (error) {
-    console.error('Erro ao carregar repositórios:', error);
+    console.error('Erro ao carregar registries:', error);
   }
 
   const region = process.env.NEXT_PUBLIC_MGC_REGION || 'br-se1';
@@ -185,11 +185,13 @@ async function RecentClustersList() {
             <div>
               <p className="font-medium">{cluster.name}</p>
               <p className="text-sm text-muted-foreground">
-                {cluster.version} • {cluster.node_pools.reduce((acc, pool) => acc + pool.replicas, 0)} nós
+                {cluster.version} • {cluster.node_pools?.reduce((acc, pool) => acc + (pool.replicas || 0), 0) || 0} nós
               </p>
             </div>
             <div className="text-sm text-muted-foreground">
-              {new Date(cluster.created_at).toLocaleDateString('pt-BR')}
+              {cluster.created_at
+                ? new Date(cluster.created_at).toLocaleDateString('pt-BR')
+                : 'N/A'}
             </div>
           </Link>
         ))}

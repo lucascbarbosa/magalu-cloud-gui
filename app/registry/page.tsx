@@ -1,4 +1,5 @@
 import { Suspense } from 'react';
+import Link from 'next/link';
 import { RegistryService } from '@/lib/mgc-client';
 import {
   Card,
@@ -10,15 +11,23 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Container, Package } from 'lucide-react';
 
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+}
+
 async function RepositoryList() {
-  let repositories: string[] = [];
+  let registries = [];
   try {
-    repositories = await RegistryService.listRepositories();
+    registries = await RegistryService.listRegistries();
   } catch (error: any) {
     return (
       <div className="p-10 text-center border rounded bg-destructive/10">
         <p className="text-destructive">
-          Erro ao carregar repositórios: {error.message || 'Erro desconhecido'}
+          Erro ao carregar registries: {error.message || 'Erro desconhecido'}
         </p>
         <p className="text-sm text-muted-foreground mt-2">
           Verifique suas credenciais e permissões de acesso ao Container Registry
@@ -27,13 +36,13 @@ async function RepositoryList() {
     );
   }
 
-  if (repositories.length === 0) {
+  if (registries.length === 0) {
     return (
       <div className="p-10 text-center border rounded bg-muted/50">
         <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-        <p className="text-muted-foreground">Nenhum repositório de contêiner encontrado.</p>
+        <p className="text-muted-foreground">Nenhum registry encontrado.</p>
         <p className="text-sm text-muted-foreground mt-2">
-          Faça push de imagens Docker para começar
+          Crie um registry ou faça push de imagens Docker para começar
         </p>
       </div>
     );
@@ -44,14 +53,15 @@ async function RepositoryList() {
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      {repositories.map((repo) => (
-        <Card key={repo} className="hover:shadow-lg transition-shadow">
+      {registries.map((registry) => (
+        <Link key={registry.id} href={`/registry/${registry.id}`}>
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg font-mono">{repo}</CardTitle>
+              <CardTitle className="text-lg font-mono">{registry.name}</CardTitle>
               <Container className="h-5 w-5 text-muted-foreground" />
             </div>
-            <CardDescription>Docker Repository</CardDescription>
+            <CardDescription>Container Registry</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -60,17 +70,40 @@ async function RepositoryList() {
                   Comando Docker:
                 </p>
                 <div className="bg-slate-900 text-slate-50 p-3 rounded text-xs font-mono break-all">
-                  docker pull {registryHost}/{repo}
+                  docker pull {registryHost}/{registry.name}
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              {registry.storage_usage_bytes > 0 && (
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-1">
+                    Uso de Armazenamento:
+                  </p>
+                  <p className="text-sm font-semibold">
+                    {formatBytes(registry.storage_usage_bytes)}
+                  </p>
+                </div>
+              )}
+              <div className="flex items-center gap-2 flex-wrap">
                 <Badge variant="outline" className="text-xs">
                   {region}
                 </Badge>
+                {registry.created_at && (
+                  <Badge variant="outline" className="text-xs">
+                    Criado: {new Date(registry.created_at).toLocaleDateString('pt-BR')}
+                  </Badge>
+                )}
               </div>
+              {registry.id && (
+                <div className="pt-2 border-t">
+                  <p className="text-xs font-mono text-muted-foreground">
+                    ID: {registry.id}
+                  </p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
+        </Link>
       ))}
     </div>
   );
@@ -98,4 +131,5 @@ export default function RegistryPage() {
     </div>
   );
 }
+
 
